@@ -56,7 +56,7 @@ def run_integration(session):
         and sys.platform == "linux"
     ):
         session.install("pytest-github-actions-annotate-failures")
-    session.install("-e", ".[all,jax]", silent=False)
+    session.install("-e", ".[all,jax,pydiffsol]", silent=False)
     session.install("--group", "dev", silent=False)
     session.run("python", "-m", "pytest", "-m", "integration")
 
