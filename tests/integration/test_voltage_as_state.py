@@ -4,6 +4,8 @@ Verifies that voltage is always an algebraic state in standard (non-basic)
 models.
 """
 
+import warnings
+
 import numpy as np
 import pytest
 
@@ -149,3 +151,122 @@ class TestBasicModelsVoltageExpression:
         assert "Voltage expression [V]" in model.variables
         assert "Voltage [V]" in model.variables
         assert not isinstance(model.variables["Voltage [V]"], pybamm.Variable)
+
+
+class TestLegacyOdeBehavior:
+    """Verify that voltage-as-a-state=false + surface_form=false produces
+    a working ODE model solvable by ScipySolver and CasadiSolver."""
+
+    LEGACY_OPTIONS = {"voltage as a state": "false", "surface form": "false"}
+
+    @pytest.mark.parametrize(
+        "model_cls",
+        [
+            pybamm.lithium_ion.SPM,
+            pybamm.lithium_ion.SPMe,
+        ],
+    )
+    def test_legacy_solvable_by_scipy(self, model_cls):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            model = model_cls(options=self.LEGACY_OPTIONS)
+        sim = pybamm.Simulation(model, solver=pybamm.ScipySolver())
+        sol = sim.solve([0, 3600])
+        assert sol is not None
+        v = sol["Voltage [V]"].entries
+        assert v[0] > v[-1]  # voltage decreases during discharge
+
+    @pytest.mark.parametrize(
+        "model_cls",
+        [
+            pybamm.lithium_ion.SPM,
+            pybamm.lithium_ion.SPMe,
+        ],
+    )
+    def test_legacy_solvable_by_casadi_safe(self, model_cls):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            model = model_cls(options=self.LEGACY_OPTIONS)
+        sim = pybamm.Simulation(model, solver=pybamm.CasadiSolver(mode="safe"))
+        sol = sim.solve([0, 3600])
+        assert sol is not None
+
+    @pytest.mark.parametrize(
+        "model_cls",
+        [
+            pybamm.lithium_ion.SPM,
+            pybamm.lithium_ion.SPMe,
+        ],
+    )
+    def test_legacy_solvable_by_casadi_fast(self, model_cls):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            model = model_cls(options=self.LEGACY_OPTIONS)
+        sim = pybamm.Simulation(model, solver=pybamm.CasadiSolver(mode="fast"))
+        sol = sim.solve([0, 3600])
+        assert sol is not None
+
+
+class TestDefaultDaeBehavior:
+    """Verify that default SPM/SPMe (VAAS + algebraic surface form) works
+    with DAE-capable solvers."""
+
+    @pytest.mark.parametrize(
+        "model_cls",
+        [
+            pybamm.lithium_ion.SPM,
+            pybamm.lithium_ion.SPMe,
+            pybamm.lithium_ion.DFN,
+        ],
+    )
+    def test_default_solvable_by_idaklu(self, model_cls):
+        model = model_cls()
+        sim = pybamm.Simulation(model, solver=pybamm.IDAKLUSolver())
+        sol = sim.solve([0, 3600])
+        assert sol is not None
+        v = sol["Voltage [V]"].entries
+        assert v[0] > v[-1]
+
+    @pytest.mark.parametrize(
+        "model_cls",
+        [
+            pybamm.lithium_ion.SPM,
+            pybamm.lithium_ion.SPMe,
+            pybamm.lithium_ion.DFN,
+        ],
+    )
+    def test_default_solvable_by_casadi_safe(self, model_cls):
+        model = model_cls()
+        sim = pybamm.Simulation(model, solver=pybamm.CasadiSolver(mode="safe"))
+        sol = sim.solve([0, 3600])
+        assert sol is not None
+
+    @pytest.mark.parametrize(
+        "model_cls",
+        [
+            pybamm.lithium_ion.SPM,
+            pybamm.lithium_ion.SPMe,
+            pybamm.lithium_ion.DFN,
+        ],
+    )
+    def test_default_rejects_scipy(self, model_cls):
+        model = model_cls()
+        sim = pybamm.Simulation(model, solver=pybamm.ScipySolver())
+        with pytest.raises(pybamm.SolverError, match="Cannot use ODE solver"):
+            sim.solve([0, 3600])
+
+    @pytest.mark.parametrize(
+        "model_cls",
+        [
+            pybamm.lithium_ion.SPM,
+            pybamm.lithium_ion.SPMe,
+            pybamm.lithium_ion.DFN,
+        ],
+    )
+    def test_voltage_state_matches_expression(self, model_cls):
+        model = model_cls()
+        sim = pybamm.Simulation(model, solver=pybamm.IDAKLUSolver())
+        sol = sim.solve([0, 3600])
+        v = sol["Voltage [V]"].entries
+        v_expr = sol["Voltage expression [V]"].entries
+        np.testing.assert_allclose(v, v_expr, rtol=1e-3, atol=1e-3)
