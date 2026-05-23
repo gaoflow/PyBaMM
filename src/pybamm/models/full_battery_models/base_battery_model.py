@@ -456,6 +456,19 @@ class BatteryModelOptions(pybamm.FuzzyDict):
         }
         extra_options = extra_options or {}
 
+        if extra_options.get("voltage as a state") == "false":
+            import warnings
+
+            warnings.warn(
+                "Setting 'voltage as a state' to 'false' is deprecated and will "
+                "be removed in a future release. The default solver for all "
+                "standard models is now IDAKLUSolver or CasadiSolver(mode='safe'). "
+                "If you need ODE-only behavior, set "
+                "options={'voltage as a state': 'false', 'surface form': 'false'}.",
+                DeprecationWarning,
+                stacklevel=4,
+            )
+
         # Handle OCP option renaming
         _rename_option(
             extra_options,

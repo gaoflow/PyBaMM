@@ -114,6 +114,28 @@ class TestVoltageAlwaysAState:
         model = pybamm.lithium_ion.DFN()
         assert model.options["surface form"] == "false"
 
+    def test_vaas_false_emits_deprecation_warning(self):
+        import warnings
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            pybamm.lithium_ion.SPM(
+                options={"voltage as a state": "false", "surface form": "false"}
+            )
+            dep_warnings = [x for x in w if issubclass(x.category, DeprecationWarning)]
+            assert len(dep_warnings) == 1
+            assert "deprecated" in str(dep_warnings[0].message)
+            assert "IDAKLUSolver" in str(dep_warnings[0].message)
+
+    def test_vaas_true_does_not_emit_deprecation(self):
+        import warnings
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            pybamm.lithium_ion.SPM(options={"voltage as a state": "true"})
+            dep_warnings = [x for x in w if issubclass(x.category, DeprecationWarning)]
+            assert len(dep_warnings) == 0
+
 
 class TestBasicModelsVoltageExpression:
     """Basic models expose voltage as an expression, not a state."""
