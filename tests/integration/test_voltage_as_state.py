@@ -102,6 +102,18 @@ class TestVoltageAlwaysAState:
                 }
             )
 
+    def test_spm_defaults_to_algebraic_surface_form(self):
+        model = pybamm.lithium_ion.SPM()
+        assert model.options["surface form"] == "algebraic"
+
+    def test_spme_defaults_to_algebraic_surface_form(self):
+        model = pybamm.lithium_ion.SPMe()
+        assert model.options["surface form"] == "algebraic"
+
+    def test_dfn_defaults_to_false_surface_form(self):
+        model = pybamm.lithium_ion.DFN()
+        assert model.options["surface form"] == "false"
+
 
 class TestBasicModelsVoltageExpression:
     """Basic models expose voltage as an expression, not a state."""
