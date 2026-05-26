@@ -463,8 +463,9 @@ class BatteryModelOptions(pybamm.FuzzyDict):
                 "Setting 'voltage as a state' to 'false' is deprecated and will "
                 "be removed in a future release. The default solver for all "
                 "standard models is now IDAKLUSolver or CasadiSolver(mode='safe'). "
-                "If you need ODE-only behavior, set "
-                "options={'voltage as a state': 'false', 'surface form': 'false'}.",
+                "For SPM/SPMe, setting 'voltage as a state' to 'false' and "
+                "'surface form' to 'false' produces a pure ODE model. DFN "
+                "retains other algebraic states regardless of this option.",
                 DeprecationWarning,
                 stacklevel=4,
             )

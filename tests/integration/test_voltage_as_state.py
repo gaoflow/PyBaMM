@@ -127,7 +127,8 @@ class TestVoltageAlwaysAState:
             dep_warnings = [x for x in w if issubclass(x.category, DeprecationWarning)]
             assert len(dep_warnings) == 1
             assert "deprecated" in str(dep_warnings[0].message)
-            assert "IDAKLUSolver" in str(dep_warnings[0].message)
+            assert "SPM/SPMe" in str(dep_warnings[0].message)
+            assert "DFN" in str(dep_warnings[0].message)
 
     def test_vaas_true_does_not_emit_deprecation(self):
         import warnings
@@ -155,7 +156,8 @@ class TestBasicModelsVoltageExpression:
 
 class TestLegacyOdeBehavior:
     """Verify that voltage-as-a-state=false + surface_form=false produces
-    a working ODE model solvable by ScipySolver and CasadiSolver."""
+    a working ODE model for SPM/SPMe (but not DFN, which retains other
+    algebraic states)."""
 
     LEGACY_OPTIONS = {"voltage as a state": "false", "surface form": "false"}
 
